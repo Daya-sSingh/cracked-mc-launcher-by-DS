@@ -40,7 +40,7 @@ mod tests {
     fn sha1_of_bytes_matches_known_vector() {
         // SHA-1("abc") is a standard test vector.
         let digest = sha1_of_bytes(b"abc");
-        assert_eq!(digest, "a9993e364706816aba3e25717850c26c9cd0d89");
+        assert_eq!(digest, "a9993e364706816aba3e25717850c26c9cd0d89d");
     }
 
     #[tokio::test]
