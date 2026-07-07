@@ -119,7 +119,7 @@ impl DownloadManager {
         );
 
         let client = self.client.clone();
-        stream::iter(tasks.into_iter())
+        stream::iter(tasks)
             .map(|task| {
                 let client = client.clone();
                 let controller = controller.clone();
