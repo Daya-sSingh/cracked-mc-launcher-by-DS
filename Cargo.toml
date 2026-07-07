@@ -1,0 +1,54 @@
+[workspace]
+resolver = "2"
+members = [
+    "src-tauri",
+    "crates/database",
+    "crates/downloads",
+    "crates/minecraft",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.77"
+authors = ["Launcher Contributors"]
+license = "MIT"
+repository = "https://github.com/your-org/launcher"
+
+# Centralized dependency versions. Every crate in the workspace should pull
+# shared dependencies from here (`some_crate = { workspace = true }`) so the
+# whole project upgrades together instead of drifting per-crate.
+[workspace.dependencies]
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "fs", "process", "io-util", "sync", "time"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+reqwest = { version = "0.12", default-features = false, features = ["json", "stream", "rustls-tls"] }
+futures-util = "0.3"
+thiserror = "1"
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", default-features = false, features = ["serde", "clock"] }
+sha1 = "0.10"
+async-trait = "0.1"
+zip = "2"
+regex = "1"
+
+# Internal crates, referenced by path so downstream crates can do
+# `minecraft = { workspace = true }` instead of repeating relative paths.
+[workspace.dependencies.database]
+path = "crates/database"
+[workspace.dependencies.downloads]
+path = "crates/downloads"
+[workspace.dependencies.minecraft]
+path = "crates/minecraft"
+
+# Release builds favor binary size + runtime speed over compile time, since
+# this ships to end users as a desktop app.
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"

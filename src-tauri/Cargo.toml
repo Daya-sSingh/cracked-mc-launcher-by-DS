@@ -1,0 +1,33 @@
+[package]
+name = "launcher"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+name = "launcher_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+database = { workspace = true }
+downloads = { workspace = true }
+minecraft = { workspace = true }
+tokio = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+[features]
+# Recognized by the Tauri CLI when building for mobile targets — not used
+# yet (this milestone is desktop-only) but left in place so `tauri android
+# init` / `tauri ios init` work without touching this file later.
+custom-protocol = ["tauri/custom-protocol"]

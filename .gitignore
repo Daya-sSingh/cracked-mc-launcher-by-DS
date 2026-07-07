@@ -1,0 +1,31 @@
+# Rust
+/target/
+**/target/
+Cargo.lock.bak
+
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+npm-debug.log*
+
+# Tauri
+src-tauri/target/
+src-tauri/gen/
+
+# Runtime data (created on first launch, not part of the repo)
+/.dev-data/
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Env / secrets
+.env
+.env.local
+*.pem
+*.p12
+*.keystore
