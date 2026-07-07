@@ -432,17 +432,11 @@ where
 {
     tokio::spawn(async move {
         let mut lines = BufReader::new(reader).lines();
-        loop {
-            match lines.next_line().await {
-                Ok(Some(line)) => {
-                    let _ = events.send(LaunchEvent::ProcessOutput { line, is_stderr });
-                }
-                _ => break,
-            }
+        while let Ok(Some(line)) = lines.next_line().await {
+            let _ = events.send(LaunchEvent::ProcessOutput { line, is_stderr });
         }
     });
 }
-
 async fn load_or_fetch_version_detail(
     client: &reqwest::Client,
     paths: &LauncherPaths,
