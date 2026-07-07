@@ -130,7 +130,7 @@ jobs:
           # No `tagName` / `releaseName` here — the build job only verifies
           # the app compiles and bundles cleanly. The release job below
           # uses the same action with those fields set.
-          args: --bundles none   # don't produce platform installers on every push
+         args: --no-bundle   # don't produce platform installers on every push
 
   # ── Release (tags only) ──────────────────────────────────────────────────
   release:
