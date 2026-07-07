@@ -28,8 +28,12 @@ async fn initialize_state(app: &tauri::AppHandle) -> Result<AppState, String> {
         .map_err(|e| format!("could not resolve the application data directory: {e}"))?;
 
     let paths = LauncherPaths::new(data_dir);
-    std::fs::create_dir_all(paths.root())
-        .map_err(|e| format!("could not create app data directory at {}: {e}", paths.root().display()))?;
+    std::fs::create_dir_all(paths.root()).map_err(|e| {
+        format!(
+            "could not create app data directory at {}: {e}",
+            paths.root().display()
+        )
+    })?;
 
     let pool = database::init_pool(&paths.database_file())
         .await
@@ -105,4 +109,3 @@ pub fn run() {
         .run(tauri::generate_context!())
         .expect("error while running the launcher application");
 }
-

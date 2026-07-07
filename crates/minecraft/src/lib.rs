@@ -19,6 +19,10 @@ pub mod paths;
 pub mod version_detail;
 
 pub use error::MinecraftError;
-pub use launch::{AccountType, GameAccount, LaunchEvent, LaunchHandle, LaunchRequest, LaunchStage, Loader};
-pub use manifest::{fetch_version_manifest, LatestVersions, VersionManifest, VersionSummary, VersionType};
+pub use launch::{
+    AccountType, GameAccount, LaunchEvent, LaunchHandle, LaunchRequest, LaunchStage, Loader,
+};
+pub use manifest::{
+    fetch_version_manifest, LatestVersions, VersionManifest, VersionSummary, VersionType,
+};
 pub use paths::LauncherPaths;

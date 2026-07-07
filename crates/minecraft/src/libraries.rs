@@ -60,12 +60,19 @@ pub fn resolve_libraries(libraries: &[Library], libraries_dir: &Path) -> Resolve
     resolved
 }
 
-fn resolve_main_artifact(library: &Library, libraries_dir: &Path) -> Option<(PathBuf, DownloadTask)> {
+fn resolve_main_artifact(
+    library: &Library,
+    libraries_dir: &Path,
+) -> Option<(PathBuf, DownloadTask)> {
     if let Some(artifact) = library.downloads.as_ref().and_then(|d| d.artifact.as_ref()) {
         let destination = libraries_dir.join(&artifact.path);
-        let task = DownloadTask::new(artifact.url.clone(), destination.clone(), format!("library: {}", library.name))
-            .with_sha1(artifact.sha1.clone())
-            .with_size(artifact.size);
+        let task = DownloadTask::new(
+            artifact.url.clone(),
+            destination.clone(),
+            format!("library: {}", library.name),
+        )
+        .with_sha1(artifact.sha1.clone())
+        .with_size(artifact.size);
         return Some((destination, task));
     }
 
@@ -77,10 +84,18 @@ fn resolve_main_artifact(library: &Library, libraries_dir: &Path) -> Option<(Pat
         .url
         .clone()
         .unwrap_or_else(|| "https://libraries.minecraft.net/".to_string());
-    let base = if base.ends_with('/') { base } else { format!("{base}/") };
+    let base = if base.ends_with('/') {
+        base
+    } else {
+        format!("{base}/")
+    };
     let destination = libraries_dir.join(&path);
     let url = format!("{base}{path}");
-    let task = DownloadTask::new(url, destination.clone(), format!("library: {}", library.name));
+    let task = DownloadTask::new(
+        url,
+        destination.clone(),
+        format!("library: {}", library.name),
+    );
     Some((destination, task))
 }
 
@@ -242,20 +257,31 @@ fn maven_group_artifact_key(coordinate: &str) -> String {
 /// always just `META-INF/`). Runs on a blocking thread since the `zip`
 /// crate's reader is synchronous and these archives are small enough that
 /// the blocking I/O is brief.
-pub async fn extract_native_jar(jar_path: PathBuf, natives_dir: PathBuf, exclude: Vec<String>) -> Result<(), MinecraftError> {
-    tokio::task::spawn_blocking(move || extract_native_jar_blocking(&jar_path, &natives_dir, &exclude))
-        .await
-        .map_err(|join_err| MinecraftError::NativeExtraction(join_err.to_string()))?
+pub async fn extract_native_jar(
+    jar_path: PathBuf,
+    natives_dir: PathBuf,
+    exclude: Vec<String>,
+) -> Result<(), MinecraftError> {
+    tokio::task::spawn_blocking(move || {
+        extract_native_jar_blocking(&jar_path, &natives_dir, &exclude)
+    })
+    .await
+    .map_err(|join_err| MinecraftError::NativeExtraction(join_err.to_string()))?
 }
 
-fn extract_native_jar_blocking(jar_path: &Path, natives_dir: &Path, exclude: &[String]) -> Result<(), MinecraftError> {
+fn extract_native_jar_blocking(
+    jar_path: &Path,
+    natives_dir: &Path,
+    exclude: &[String],
+) -> Result<(), MinecraftError> {
     let file = std::fs::File::open(jar_path).map_err(|source| MinecraftError::Io {
         context: format!("opening native archive {}", jar_path.display()),
         source,
     })?;
 
-    let mut archive = zip::ZipArchive::new(file)
-        .map_err(|err| MinecraftError::NativeExtraction(format!("{}: {err}", jar_path.display())))?;
+    let mut archive = zip::ZipArchive::new(file).map_err(|err| {
+        MinecraftError::NativeExtraction(format!("{}: {err}", jar_path.display()))
+    })?;
 
     std::fs::create_dir_all(natives_dir).map_err(|source| MinecraftError::Io {
         context: format!("creating natives directory {}", natives_dir.display()),
@@ -272,7 +298,10 @@ fn extract_native_jar_blocking(jar_path: &Path, natives_dir: &Path, exclude: &[S
         }
 
         let name = entry.name().to_string();
-        if exclude.iter().any(|prefix| name.starts_with(prefix.as_str())) {
+        if exclude
+            .iter()
+            .any(|prefix| name.starts_with(prefix.as_str()))
+        {
             continue;
         }
 
@@ -284,10 +313,11 @@ fn extract_native_jar_blocking(jar_path: &Path, natives_dir: &Path, exclude: &[S
             })?;
         }
 
-        let mut out_file = std::fs::File::create(&destination).map_err(|source| MinecraftError::Io {
-            context: format!("writing native file {}", destination.display()),
-            source,
-        })?;
+        let mut out_file =
+            std::fs::File::create(&destination).map_err(|source| MinecraftError::Io {
+                context: format!("writing native file {}", destination.display()),
+                source,
+            })?;
         std::io::copy(&mut entry, &mut out_file).map_err(|source| MinecraftError::Io {
             context: format!("writing native file {}", destination.display()),
             source,
@@ -304,7 +334,10 @@ mod tests {
     #[test]
     fn maven_coordinate_without_classifier() {
         let path = maven_coordinate_to_path("net.fabricmc:fabric-loader:0.16.9").unwrap();
-        assert_eq!(path, "net/fabricmc/fabric-loader/0.16.9/fabric-loader-0.16.9.jar");
+        assert_eq!(
+            path,
+            "net/fabricmc/fabric-loader/0.16.9/fabric-loader-0.16.9.jar"
+        );
     }
 
     #[test]
@@ -364,12 +397,16 @@ mod tests {
         let windows = maven_group_artifact_key("org.lwjgl:lwjgl-glfw:3.3.3:natives-windows");
         let linux = maven_group_artifact_key("org.lwjgl:lwjgl-glfw:3.3.3:natives-linux");
         let macos = maven_group_artifact_key("org.lwjgl:lwjgl-glfw:3.3.3:natives-macos");
-        let macos_arm64 = maven_group_artifact_key("org.lwjgl:lwjgl-glfw:3.3.3:natives-macos-arm64");
+        let macos_arm64 =
+            maven_group_artifact_key("org.lwjgl:lwjgl-glfw:3.3.3:natives-macos-arm64");
 
         assert_ne!(windows, linux);
         assert_ne!(windows, macos);
         assert_ne!(linux, macos);
-        assert_ne!(macos, macos_arm64, "arm64 variant must be distinct from the base macos one");
+        assert_ne!(
+            macos, macos_arm64,
+            "arm64 variant must be distinct from the base macos one"
+        );
     }
 
     #[test]
@@ -387,16 +424,26 @@ mod tests {
     #[test]
     fn dedupe_keeps_last_occurrence_of_duplicate_coordinates() {
         let libraries = vec![
-            lib("org.ow2.asm:asm:9.1"),      // vanilla's copy — older
+            lib("org.ow2.asm:asm:9.1"), // vanilla's copy — older
             lib("net.fabricmc:fabric-loader:0.16.9"),
-            lib("org.ow2.asm:asm:9.7"),      // fabric's copy — newer, should win
+            lib("org.ow2.asm:asm:9.7"), // fabric's copy — newer, should win
         ];
 
         let result = dedupe_libraries_preferring_last(libraries);
 
-        assert_eq!(result.len(), 2, "the two asm entries should collapse into one");
-        let asm = result.iter().find(|l| l.name.starts_with("org.ow2.asm:asm:")).unwrap();
-        assert_eq!(asm.name, "org.ow2.asm:asm:9.7", "the later (Fabric) version should win");
+        assert_eq!(
+            result.len(),
+            2,
+            "the two asm entries should collapse into one"
+        );
+        let asm = result
+            .iter()
+            .find(|l| l.name.starts_with("org.ow2.asm:asm:"))
+            .unwrap();
+        assert_eq!(
+            asm.name, "org.ow2.asm:asm:9.7",
+            "the later (Fabric) version should win"
+        );
     }
 
     #[test]

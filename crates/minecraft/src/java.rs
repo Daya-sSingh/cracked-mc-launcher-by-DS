@@ -61,7 +61,9 @@ struct RuntimeFileDownloadRaw {
 /// path to the executable, not just a directory.
 pub async fn find_system_java() -> Option<PathBuf> {
     if let Ok(java_home) = std::env::var("JAVA_HOME") {
-        let candidate = PathBuf::from(java_home).join("bin").join(java_binary_name());
+        let candidate = PathBuf::from(java_home)
+            .join("bin")
+            .join(java_binary_name());
         if candidate.exists() {
             return Some(candidate);
         }
@@ -142,7 +144,10 @@ pub async fn ensure_managed_runtime(
         component: component.to_string(),
     })?;
 
-    let java_root = runtime_dir.join(component).join(platform_key).join(component);
+    let java_root = runtime_dir
+        .join(component)
+        .join(platform_key)
+        .join(component);
     let executable = managed_java_executable_path(&java_root);
     let sentinel = java_root.join(".install-complete");
 
@@ -169,10 +174,12 @@ pub async fn ensure_managed_runtime(
         match file_entry.entry_type.as_str() {
             "directory" => {
                 let dir = java_root.join(relative_path);
-                tokio::fs::create_dir_all(&dir).await.map_err(|source| MinecraftError::Io {
-                    context: format!("creating runtime directory {}", dir.display()),
-                    source,
-                })?;
+                tokio::fs::create_dir_all(&dir)
+                    .await
+                    .map_err(|source| MinecraftError::Io {
+                        context: format!("creating runtime directory {}", dir.display()),
+                        source,
+                    })?;
             }
             "file" => {
                 if let Some(downloads) = &file_entry.downloads {
@@ -198,7 +205,9 @@ pub async fn ensure_managed_runtime(
         }
     }
 
-    download_manager.run(tasks, DownloadController::new(), progress).await?;
+    download_manager
+        .run(tasks, DownloadController::new(), progress)
+        .await?;
 
     mark_files_executable(&java_root, &executable_relative_paths).await;
     tokio::fs::write(&sentinel, b"ok").await.ok();
@@ -275,7 +284,9 @@ fn runtime_platform_key() -> Option<&'static str> {
     }
 }
 
-async fn fetch_runtime_manifest(client: &reqwest::Client) -> Result<JavaRuntimeManifest, MinecraftError> {
+async fn fetch_runtime_manifest(
+    client: &reqwest::Client,
+) -> Result<JavaRuntimeManifest, MinecraftError> {
     let response = client.get(JAVA_RUNTIME_MANIFEST_URL).send().await?;
     let bytes = response.error_for_status()?.bytes().await?;
     serde_json::from_slice(&bytes).map_err(|source| MinecraftError::Deserialize {
@@ -324,7 +335,10 @@ mod tests {
         // actually ran this test, since CI covers Linux, Windows, macOS.
         let key = runtime_platform_key();
         if matches!(std::env::consts::ARCH, "x86_64" | "aarch64") {
-            assert!(key.is_some(), "should resolve a runtime key for common 64-bit targets");
+            assert!(
+                key.is_some(),
+                "should resolve a runtime key for common 64-bit targets"
+            );
         }
     }
 }

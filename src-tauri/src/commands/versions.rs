@@ -6,11 +6,11 @@ use crate::state::AppState;
 
 const CACHE_KEY: &str = "version_manifest_cache";
 const CACHE_TTL_SECONDS: i64 = 60 * 60; // Mojang publishes new snapshots at
-                                         // most a few times a week; checking
-                                         // at most once an hour is plenty
-                                         // fresh while avoiding hitting their
-                                         // CDN on every "create instance"
-                                         // dialog open.
+                                        // most a few times a week; checking
+                                        // at most once an hour is plenty
+                                        // fresh while avoiding hitting their
+                                        // CDN on every "create instance"
+                                        // dialog open.
 
 #[derive(Debug, Serialize, Deserialize)]
 struct CachedManifest {

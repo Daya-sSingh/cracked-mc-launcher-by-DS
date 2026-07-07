@@ -20,7 +20,11 @@ pub struct DownloadTask {
 }
 
 impl DownloadTask {
-    pub fn new(url: impl Into<String>, destination: impl Into<PathBuf>, label: impl Into<String>) -> Self {
+    pub fn new(
+        url: impl Into<String>,
+        destination: impl Into<PathBuf>,
+        label: impl Into<String>,
+    ) -> Self {
         Self {
             url: url.into(),
             destination: destination.into(),

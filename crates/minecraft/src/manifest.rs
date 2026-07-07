@@ -3,7 +3,8 @@ use serde::Deserialize;
 use crate::error::MinecraftError;
 use crate::version_detail::VersionDetail;
 
-const VERSION_MANIFEST_URL: &str = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json";
+const VERSION_MANIFEST_URL: &str =
+    "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json";
 
 #[derive(Debug, Clone, Deserialize, serde::Serialize)]
 pub struct VersionManifest {
@@ -41,7 +42,9 @@ pub enum VersionType {
 /// This is intentionally not cached at this layer; callers (the
 /// `database`-backed cache, in later milestones) decide how long a fetch is
 /// considered fresh.
-pub async fn fetch_version_manifest(client: &reqwest::Client) -> Result<VersionManifest, MinecraftError> {
+pub async fn fetch_version_manifest(
+    client: &reqwest::Client,
+) -> Result<VersionManifest, MinecraftError> {
     let response = client.get(VERSION_MANIFEST_URL).send().await?;
     let bytes = response.error_for_status()?.bytes().await?;
     serde_json::from_slice(&bytes).map_err(|source| MinecraftError::Deserialize {
@@ -105,7 +108,10 @@ mod tests {
         let manifest: VersionManifest = serde_json::from_str(json).unwrap();
         assert_eq!(manifest.latest.release, "1.21.11");
         assert_eq!(manifest.versions.len(), 2);
-        assert_eq!(manifest.find("1.21.11").unwrap().version_type, VersionType::Release);
+        assert_eq!(
+            manifest.find("1.21.11").unwrap().version_type,
+            VersionType::Release
+        );
         assert!(manifest.find("does-not-exist").is_none());
     }
 

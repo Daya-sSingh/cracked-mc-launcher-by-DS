@@ -34,7 +34,10 @@ pub async fn fetch_asset_index(
 /// Same as [`fetch_asset_index`] but returns the raw bytes, so callers can
 /// persist exactly what was downloaded (asset indexes are immutable once
 /// published for a given id, so a cached copy never needs to expire).
-pub async fn fetch_asset_index_bytes(client: &reqwest::Client, url: &str) -> Result<Vec<u8>, MinecraftError> {
+pub async fn fetch_asset_index_bytes(
+    client: &reqwest::Client,
+    url: &str,
+) -> Result<Vec<u8>, MinecraftError> {
     let response = client.get(url).send().await?;
     Ok(response.error_for_status()?.bytes().await?.to_vec())
 }
@@ -54,7 +57,10 @@ pub fn parse_asset_index(bytes: &[u8], context: &str) -> Result<AssetIndex, Mine
 /// where `<hh>` is the first two hex characters of the hash. This is shared,
 /// content-addressed storage across every instance — see
 /// `docs/ARCHITECTURE.md` for why instances don't each get their own copy.
-pub fn build_asset_download_tasks(asset_index: &AssetIndex, assets_dir: &Path) -> Vec<DownloadTask> {
+pub fn build_asset_download_tasks(
+    asset_index: &AssetIndex,
+    assets_dir: &Path,
+) -> Vec<DownloadTask> {
     let mut seen_hashes = std::collections::HashSet::new();
     let mut tasks = Vec::new();
 
@@ -100,16 +106,20 @@ pub async fn materialize_legacy_asset_layout(
         }
 
         if let Some(parent) = target.parent() {
-            tokio::fs::create_dir_all(parent).await.map_err(|source| MinecraftError::Io {
-                context: format!("creating legacy asset directory for {name}"),
-                source,
-            })?;
+            tokio::fs::create_dir_all(parent)
+                .await
+                .map_err(|source| MinecraftError::Io {
+                    context: format!("creating legacy asset directory for {name}"),
+                    source,
+                })?;
         }
 
-        tokio::fs::copy(&source, &target).await.map_err(|source| MinecraftError::Io {
-            context: format!("copying legacy asset {name}"),
-            source,
-        })?;
+        tokio::fs::copy(&source, &target)
+            .await
+            .map_err(|source| MinecraftError::Io {
+                context: format!("copying legacy asset {name}"),
+                source,
+            })?;
     }
 
     Ok(())
@@ -180,7 +190,11 @@ mod tests {
         );
         let index = AssetIndex { objects };
         let tasks = build_asset_download_tasks(&index, Path::new("/tmp/assets"));
-        assert_eq!(tasks.len(), 1, "identical hashes should only be downloaded once");
+        assert_eq!(
+            tasks.len(),
+            1,
+            "identical hashes should only be downloaded once"
+        );
     }
 
     #[test]

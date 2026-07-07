@@ -16,13 +16,33 @@ use crate::state::AppState;
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type")]
 enum LaunchEventPayload {
-    Stage { stage: &'static str },
-    DownloadStarted { label: String, total_bytes: Option<u64> },
-    DownloadProgress { label: String, bytes_downloaded: u64, total_bytes: Option<u64> },
-    DownloadSkipped { label: String },
-    DownloadRetrying { label: String, attempt: u32, error: String },
-    DownloadCompleted { label: String },
-    DownloadFailed { label: String, error: String },
+    Stage {
+        stage: &'static str,
+    },
+    DownloadStarted {
+        label: String,
+        total_bytes: Option<u64>,
+    },
+    DownloadProgress {
+        label: String,
+        bytes_downloaded: u64,
+        total_bytes: Option<u64>,
+    },
+    DownloadSkipped {
+        label: String,
+    },
+    DownloadRetrying {
+        label: String,
+        attempt: u32,
+        error: String,
+    },
+    DownloadCompleted {
+        label: String,
+    },
+    DownloadFailed {
+        label: String,
+        error: String,
+    },
     AggregateProgress {
         completed_tasks: usize,
         total_tasks: usize,
@@ -30,14 +50,22 @@ enum LaunchEventPayload {
         total_bytes: u64,
         bytes_per_sec: f64,
     },
-    ProcessOutput { line: String, is_stderr: bool },
-    Exited { exit_code: Option<i32>, was_stopped_by_user: bool },
+    ProcessOutput {
+        line: String,
+        is_stderr: bool,
+    },
+    Exited {
+        exit_code: Option<i32>,
+        was_stopped_by_user: bool,
+    },
     /// Emitted directly by this module (not derived from
     /// `minecraft::LaunchEvent`) when `minecraft::launch` itself returns an
     /// `Err` before ever spawning a process — e.g. the version doesn't
     /// exist, every download retry was exhausted, or no Java could be
     /// found or installed.
-    Failed { message: String },
+    Failed {
+        message: String,
+    },
 }
 
 impl From<LaunchEvent> for LaunchEventPayload {
@@ -65,12 +93,24 @@ impl From<LaunchEvent> for LaunchEventPayload {
                     bytes_downloaded,
                     total_bytes,
                 },
-                downloads::DownloadEvent::Skipped { label } => LaunchEventPayload::DownloadSkipped { label },
-                downloads::DownloadEvent::Retrying { label, attempt, error } => {
-                    LaunchEventPayload::DownloadRetrying { label, attempt, error }
+                downloads::DownloadEvent::Skipped { label } => {
+                    LaunchEventPayload::DownloadSkipped { label }
                 }
-                downloads::DownloadEvent::Completed { label } => LaunchEventPayload::DownloadCompleted { label },
-                downloads::DownloadEvent::Failed { label, error } => LaunchEventPayload::DownloadFailed { label, error },
+                downloads::DownloadEvent::Retrying {
+                    label,
+                    attempt,
+                    error,
+                } => LaunchEventPayload::DownloadRetrying {
+                    label,
+                    attempt,
+                    error,
+                },
+                downloads::DownloadEvent::Completed { label } => {
+                    LaunchEventPayload::DownloadCompleted { label }
+                }
+                downloads::DownloadEvent::Failed { label, error } => {
+                    LaunchEventPayload::DownloadFailed { label, error }
+                }
                 downloads::DownloadEvent::AggregateProgress {
                     completed_tasks,
                     total_tasks,
@@ -85,7 +125,9 @@ impl From<LaunchEvent> for LaunchEventPayload {
                     bytes_per_sec,
                 },
             },
-            LaunchEvent::ProcessOutput { line, is_stderr } => LaunchEventPayload::ProcessOutput { line, is_stderr },
+            LaunchEvent::ProcessOutput { line, is_stderr } => {
+                LaunchEventPayload::ProcessOutput { line, is_stderr }
+            }
             LaunchEvent::Exited {
                 exit_code,
                 was_stopped_by_user,
@@ -196,7 +238,12 @@ pub async fn launch_instance(
             Err(err) => {
                 tracing::error!(error = %err, instance_id = %id, "launch failed before the game process could start");
                 let channel = event_channel_name(id);
-                let _ = app_handle.emit(&channel, LaunchEventPayload::Failed { message: err.to_string() });
+                let _ = app_handle.emit(
+                    &channel,
+                    LaunchEventPayload::Failed {
+                        message: err.to_string(),
+                    },
+                );
             }
         }
     });
@@ -218,14 +265,23 @@ pub fn stop_instance(instance_id: String, state: tauri::State<'_, AppState>) -> 
 }
 
 #[tauri::command]
-pub fn is_instance_running(instance_id: String, state: tauri::State<'_, AppState>) -> Result<bool, String> {
+pub fn is_instance_running(
+    instance_id: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<bool, String> {
     let id = parse_instance_id(&instance_id)?;
     Ok(state.running.lock().unwrap().contains_key(&id))
 }
 
 #[tauri::command]
 pub fn list_running_instances(state: tauri::State<'_, AppState>) -> Vec<String> {
-    state.running.lock().unwrap().keys().map(|id| id.to_string()).collect()
+    state
+        .running
+        .lock()
+        .unwrap()
+        .keys()
+        .map(|id| id.to_string())
+        .collect()
 }
 
 fn split_args(raw: &Option<String>) -> Vec<String> {

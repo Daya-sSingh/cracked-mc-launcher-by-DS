@@ -113,9 +113,7 @@ impl InstanceRepository for SqliteInstanceRepository {
             }
             InstanceSort::NameAscending => "ORDER BY name COLLATE NOCASE ASC",
             InstanceSort::NameDescending => "ORDER BY name COLLATE NOCASE DESC",
-            InstanceSort::FavoritesFirst => {
-                "ORDER BY favorite DESC, name COLLATE NOCASE ASC"
-            }
+            InstanceSort::FavoritesFirst => "ORDER BY favorite DESC, name COLLATE NOCASE ASC",
         };
 
         let query = format!("SELECT * FROM instances {order_by}");
@@ -281,7 +279,10 @@ mod tests {
         assert_eq!(fetched.name, "Survival World");
         assert_eq!(fetched.minecraft_version, "1.21.11");
         assert_eq!(fetched.loader, Loader::Vanilla);
-        assert_eq!(fetched.memory_max_mb, 4096, "should fall back to the schema default");
+        assert_eq!(
+            fetched.memory_max_mb, 4096,
+            "should fall back to the schema default"
+        );
         assert!(!fetched.favorite);
     }
 
@@ -374,10 +375,16 @@ mod tests {
         assert_eq!(repo.get("theme").await.unwrap(), None);
 
         repo.set("theme", r#"{"mode":"dark"}"#).await.unwrap();
-        assert_eq!(repo.get("theme").await.unwrap(), Some(r#"{"mode":"dark"}"#.to_string()));
+        assert_eq!(
+            repo.get("theme").await.unwrap(),
+            Some(r#"{"mode":"dark"}"#.to_string())
+        );
 
         // Setting the same key again should overwrite, not duplicate.
         repo.set("theme", r#"{"mode":"light"}"#).await.unwrap();
-        assert_eq!(repo.get("theme").await.unwrap(), Some(r#"{"mode":"light"}"#.to_string()));
+        assert_eq!(
+            repo.get("theme").await.unwrap(),
+            Some(r#"{"mode":"light"}"#.to_string())
+        );
     }
 }

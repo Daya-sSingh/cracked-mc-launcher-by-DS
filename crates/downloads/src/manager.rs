@@ -129,14 +129,21 @@ impl DownloadManager {
                 let failures = failures.clone();
 
                 async move {
-                    let result =
-                        download_one_with_retry(&client, &task, &controller, &events, &bytes_downloaded)
-                            .await;
+                    let result = download_one_with_retry(
+                        &client,
+                        &task,
+                        &controller,
+                        &events,
+                        &bytes_downloaded,
+                    )
+                    .await;
                     completed_tasks.fetch_add(1, Ordering::Relaxed);
 
                     match result {
                         Ok(()) => {
-                            let _ = events.send(DownloadEvent::Completed { label: task.label.clone() });
+                            let _ = events.send(DownloadEvent::Completed {
+                                label: task.label.clone(),
+                            });
                         }
                         Err(err) => {
                             let _ = events.send(DownloadEvent::Failed {
@@ -330,13 +337,10 @@ async fn try_download_once(
         request = request.header(reqwest::header::RANGE, format!("bytes={resume_from}-"));
     }
 
-    let response = request
-        .send()
-        .await
-        .map_err(|e| DownloadError::Request {
-            url: task.url.clone(),
-            source: e,
-        })?;
+    let response = request.send().await.map_err(|e| DownloadError::Request {
+        url: task.url.clone(),
+        source: e,
+    })?;
 
     // Defensive fallback for the case above when `expected_size` wasn't
     // known ahead of time: if the server still rejects our range, the
@@ -394,7 +398,10 @@ async fn try_download_once(
             source: e,
         })?;
 
-        writer.write_all(&chunk).await.map_err(|e| io_err(task, e))?;
+        writer
+            .write_all(&chunk)
+            .await
+            .map_err(|e| io_err(task, e))?;
 
         downloaded_this_attempt += chunk.len() as u64;
         bytes_counter.fetch_add(chunk.len() as u64, Ordering::Relaxed);
@@ -413,7 +420,9 @@ async fn try_download_once(
     drop(writer);
 
     if let Some(expected) = &task.sha1 {
-        let actual = sha1_of_file(&part_path).await.map_err(|e| io_err(task, e))?;
+        let actual = sha1_of_file(&part_path)
+            .await
+            .map_err(|e| io_err(task, e))?;
         if !actual.eq_ignore_ascii_case(expected) {
             tokio::fs::remove_file(&part_path).await.ok();
             return Err(DownloadError::ChecksumMismatch {
@@ -472,11 +481,12 @@ mod tests {
 
         let correct_hash = sha1_of_file(&path).await.unwrap();
 
-        let matching = DownloadTask::new("http://example.invalid/x", &path, "test").with_sha1(correct_hash);
+        let matching =
+            DownloadTask::new("http://example.invalid/x", &path, "test").with_sha1(correct_hash);
         assert!(already_up_to_date(&matching).await);
 
-        let mismatching =
-            DownloadTask::new("http://example.invalid/x", &path, "test").with_sha1("deadbeef".repeat(5));
+        let mismatching = DownloadTask::new("http://example.invalid/x", &path, "test")
+            .with_sha1("deadbeef".repeat(5));
         assert!(!already_up_to_date(&mismatching).await);
 
         tokio::fs::remove_dir_all(&dir).await.ok();

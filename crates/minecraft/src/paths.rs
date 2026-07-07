@@ -60,7 +60,9 @@ impl LauncherPaths {
     }
 
     pub fn asset_index_path(&self, asset_index_id: &str) -> PathBuf {
-        self.assets_dir().join("indexes").join(format!("{asset_index_id}.json"))
+        self.assets_dir()
+            .join("indexes")
+            .join(format!("{asset_index_id}.json"))
     }
 
     pub fn java_runtimes_dir(&self) -> PathBuf {
@@ -72,11 +74,15 @@ impl LauncherPaths {
     }
 
     pub fn version_json_path(&self, version_id: &str) -> PathBuf {
-        self.versions_dir().join(version_id).join(format!("{version_id}.json"))
+        self.versions_dir()
+            .join(version_id)
+            .join(format!("{version_id}.json"))
     }
 
     pub fn version_jar_path(&self, version_id: &str) -> PathBuf {
-        self.versions_dir().join(version_id).join(format!("{version_id}.jar"))
+        self.versions_dir()
+            .join(version_id)
+            .join(format!("{version_id}.jar"))
     }
 
     /// Where a Fabric profile response (`.../loader/<game>/<loader>/profile/json`)
@@ -108,7 +114,9 @@ impl LauncherPaths {
     }
 
     pub fn instance_natives_dir(&self, instance_id: Uuid, version_id: &str) -> PathBuf {
-        self.instance_dir(instance_id).join("natives").join(version_id)
+        self.instance_dir(instance_id)
+            .join("natives")
+            .join(version_id)
     }
 
     pub fn instance_logs_dir(&self, instance_id: Uuid) -> PathBuf {
@@ -147,7 +155,10 @@ mod tests {
     #[test]
     fn cache_paths_do_not_depend_on_instance_id() {
         let paths = LauncherPaths::new(PathBuf::from("/data"));
-        assert_eq!(paths.libraries_dir(), PathBuf::from("/data/cache/libraries"));
+        assert_eq!(
+            paths.libraries_dir(),
+            PathBuf::from("/data/cache/libraries")
+        );
         assert_eq!(paths.assets_dir(), PathBuf::from("/data/cache/assets"));
     }
 
@@ -165,7 +176,10 @@ mod tests {
     #[test]
     fn sanitize_path_segment_strips_filesystem_unsafe_characters() {
         assert_eq!(sanitize_path_segment("1.21.11"), "1.21.11");
-        assert_eq!(sanitize_path_segment("1.14 Pre-Release 5"), "1.14 Pre-Release 5");
+        assert_eq!(
+            sanitize_path_segment("1.14 Pre-Release 5"),
+            "1.14 Pre-Release 5"
+        );
         assert_eq!(sanitize_path_segment("weird:name*here"), "weird_name_here");
     }
 }

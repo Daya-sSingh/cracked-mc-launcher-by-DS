@@ -48,7 +48,9 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("launcher-sha1-test-{}", uuid_like()));
         tokio::fs::create_dir_all(&dir).await.unwrap();
         let path = dir.join("sample.bin");
-        tokio::fs::write(&path, b"the quick brown fox").await.unwrap();
+        tokio::fs::write(&path, b"the quick brown fox")
+            .await
+            .unwrap();
 
         let from_file = sha1_of_file(&path).await.unwrap();
         let from_bytes = sha1_of_bytes(b"the quick brown fox");
@@ -62,6 +64,9 @@ mod tests {
     /// sensitive — just test isolation.
     fn uuid_like() -> u128 {
         use std::time::{SystemTime, UNIX_EPOCH};
-        SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos()
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
     }
 }

@@ -176,7 +176,9 @@ pub fn resolve_arguments(
                     continue;
                 }
                 match &cond.value {
-                    StringOrList::Single(template) => resolved.push(substitute(template, placeholders)),
+                    StringOrList::Single(template) => {
+                        resolved.push(substitute(template, placeholders))
+                    }
                     StringOrList::Multiple(templates) => {
                         resolved.extend(templates.iter().map(|t| substitute(t, placeholders)));
                     }
@@ -190,7 +192,10 @@ pub fn resolve_arguments(
 /// Pre-1.13 versions ship one flat, space-separated argument string instead
 /// of the structured `arguments.game` array. No conditionals exist in this
 /// format — just placeholder substitution per whitespace-separated token.
-pub fn resolve_legacy_game_arguments(raw: &str, placeholders: &HashMap<&str, String>) -> Vec<String> {
+pub fn resolve_legacy_game_arguments(
+    raw: &str,
+    placeholders: &HashMap<&str, String>,
+) -> Vec<String> {
     raw.split_whitespace()
         .map(|token| substitute(token, placeholders))
         .collect()
@@ -226,7 +231,10 @@ mod tests {
             ArgumentEntry::Plain("${auth_player_name}".into()),
         ];
         let resolved = resolve_arguments(&entries, &FeatureFlags::new(), &placeholders());
-        assert_eq!(resolved, vec!["--username".to_string(), "Steve".to_string()]);
+        assert_eq!(
+            resolved,
+            vec!["--username".to_string(), "Steve".to_string()]
+        );
     }
 
     #[test]
@@ -307,10 +315,7 @@ mod tests {
         let parsed: VersionDetail = serde_json::from_str(json).expect("should deserialize");
         assert_eq!(parsed.id, "1.21.11");
         assert_eq!(parsed.libraries.len(), 1);
-        assert_eq!(
-            parsed.java_version.unwrap().component,
-            "java-runtime-gamma"
-        );
+        assert_eq!(parsed.java_version.unwrap().component, "java-runtime-gamma");
         assert!(parsed.legacy_minecraft_arguments.is_none());
     }
 }

@@ -43,7 +43,10 @@ pub async fn create_instance(
     request: CreateInstanceRequest,
     state: tauri::State<'_, AppState>,
 ) -> Result<Instance, String> {
-    let loader: Loader = request.loader.parse().map_err(|e: database::DatabaseError| e.to_string())?;
+    let loader: Loader = request
+        .loader
+        .parse()
+        .map_err(|e: database::DatabaseError| e.to_string())?;
 
     if request.name.trim().is_empty() {
         return Err("Instance name cannot be empty.".to_string());
@@ -57,7 +60,11 @@ pub async fn create_instance(
         icon: request.icon,
     };
 
-    let instance = state.instances.create(draft).await.map_err(|e| e.to_string())?;
+    let instance = state
+        .instances
+        .create(draft)
+        .await
+        .map_err(|e| e.to_string())?;
 
     // The game directory is created eagerly (rather than lazily on first
     // launch) so the user can e.g. drop mods into an instance's folder via
@@ -80,7 +87,10 @@ pub async fn list_instances(
 }
 
 #[tauri::command]
-pub async fn get_instance(instance_id: String, state: tauri::State<'_, AppState>) -> Result<Instance, String> {
+pub async fn get_instance(
+    instance_id: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<Instance, String> {
     let id = parse_instance_id(&instance_id)?;
     state.instances.get(id).await.map_err(|e| e.to_string())
 }
@@ -92,11 +102,18 @@ pub async fn update_instance(
     state: tauri::State<'_, AppState>,
 ) -> Result<Instance, String> {
     let id = parse_instance_id(&instance_id)?;
-    state.instances.update(id, update).await.map_err(|e| e.to_string())
+    state
+        .instances
+        .update(id, update)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub async fn delete_instance(instance_id: String, state: tauri::State<'_, AppState>) -> Result<(), String> {
+pub async fn delete_instance(
+    instance_id: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<(), String> {
     let id = parse_instance_id(&instance_id)?;
 
     {
@@ -106,7 +123,11 @@ pub async fn delete_instance(instance_id: String, state: tauri::State<'_, AppSta
         }
     }
 
-    state.instances.delete(id).await.map_err(|e| e.to_string())?;
+    state
+        .instances
+        .delete(id)
+        .await
+        .map_err(|e| e.to_string())?;
 
     let instance_dir = state.paths.instance_dir(id);
     if instance_dir.exists() {
@@ -124,7 +145,10 @@ pub async fn delete_instance(instance_id: String, state: tauri::State<'_, AppSta
 /// built themselves — anything that isn't installed through the launcher's
 /// own mod browser.
 #[tauri::command]
-pub async fn open_instance_folder(instance_id: String, state: tauri::State<'_, AppState>) -> Result<(), String> {
+pub async fn open_instance_folder(
+    instance_id: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<(), String> {
     let id = parse_instance_id(&instance_id)?;
     let game_dir = state.paths.instance_game_dir(id);
 
@@ -136,7 +160,8 @@ pub async fn open_instance_folder(instance_id: String, state: tauri::State<'_, A
         .await
         .map_err(|e| format!("Could not prepare the instance folder: {e}"))?;
 
-    open_path_in_file_manager(&game_dir).map_err(|e| format!("Could not open the instance folder: {e}"))
+    open_path_in_file_manager(&game_dir)
+        .map_err(|e| format!("Could not open the instance folder: {e}"))
 }
 
 #[cfg(target_os = "windows")]
@@ -188,7 +213,9 @@ pub async fn list_instance_mods(
         return Ok(Vec::new());
     }
 
-    let mut entries = tokio::fs::read_dir(&mods_dir).await.map_err(|e| e.to_string())?;
+    let mut entries = tokio::fs::read_dir(&mods_dir)
+        .await
+        .map_err(|e| e.to_string())?;
     let mut mods = Vec::new();
 
     while let Some(entry) = entries.next_entry().await.map_err(|e| e.to_string())? {

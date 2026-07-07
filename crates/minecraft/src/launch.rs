@@ -116,7 +116,6 @@ pub struct LaunchRequest {
     pub fullscreen: bool,
 }
 
-
 /// Progress and lifecycle updates for one launch, from "resolving the
 /// version" all the way through the game process exiting. Tauri commands
 /// forward these to the frontend largely as-is.
@@ -128,8 +127,14 @@ pub enum LaunchEvent {
     /// `is_stderr` (Minecraft's own logger writes plenty of legitimate
     /// non-error output to stderr, so this is *not* the same as "is an
     /// error").
-    ProcessOutput { line: String, is_stderr: bool },
-    Exited { exit_code: Option<i32>, was_stopped_by_user: bool },
+    ProcessOutput {
+        line: String,
+        is_stderr: bool,
+    },
+    Exited {
+        exit_code: Option<i32>,
+        was_stopped_by_user: bool,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -175,7 +180,8 @@ pub async fn launch(
     events: UnboundedSender<LaunchEvent>,
 ) -> Result<LaunchHandle, MinecraftError> {
     let _ = events.send(LaunchEvent::Stage(LaunchStage::ResolvingVersion));
-    let vanilla_version = load_or_fetch_version_detail(http, paths, &request.minecraft_version).await?;
+    let vanilla_version =
+        load_or_fetch_version_detail(http, paths, &request.minecraft_version).await?;
 
     // The client jar is always the unmodified vanilla one, cached under the
     // plain Minecraft version id regardless of loader, so every Fabric
@@ -203,7 +209,8 @@ pub async fn launch(
     };
 
     let _ = events.send(LaunchEvent::Stage(LaunchStage::DownloadingFiles));
-    let resolved_libraries = libraries::resolve_libraries(&version.libraries, &paths.libraries_dir());
+    let resolved_libraries =
+        libraries::resolve_libraries(&version.libraries, &paths.libraries_dir());
     let asset_index = load_or_fetch_asset_index(http, paths, &version).await?;
 
     let mut tasks: Vec<DownloadTask> = Vec::new();
@@ -217,11 +224,22 @@ pub async fn launch(
         .with_size(version.downloads.client.size),
     );
     tasks.extend(resolved_libraries.classpath_tasks.clone());
-    tasks.extend(resolved_libraries.native_jars.iter().map(|n| n.task.clone()));
-    tasks.extend(assets::build_asset_download_tasks(&asset_index, &paths.assets_dir()));
+    tasks.extend(
+        resolved_libraries
+            .native_jars
+            .iter()
+            .map(|n| n.task.clone()),
+    );
+    tasks.extend(assets::build_asset_download_tasks(
+        &asset_index,
+        &paths.assets_dir(),
+    ));
 
     let logging_argument = if let Some(logging) = &version.logging {
-        let destination = paths.assets_dir().join("log_configs").join(&logging.client.file.id);
+        let destination = paths
+            .assets_dir()
+            .join("log_configs")
+            .join(&logging.client.file.id);
         tasks.push(
             DownloadTask::new(
                 logging.client.file.url.clone(),
@@ -248,29 +266,49 @@ pub async fn launch(
     forward_handle.abort();
 
     if assets::needs_legacy_layout(&version.asset_index.id) {
-        assets::materialize_legacy_asset_layout(&asset_index, &paths.assets_dir(), &version.asset_index.id).await?;
+        assets::materialize_legacy_asset_layout(
+            &asset_index,
+            &paths.assets_dir(),
+            &version.asset_index.id,
+        )
+        .await?;
     }
 
     let _ = events.send(LaunchEvent::Stage(LaunchStage::ExtractingNatives));
     let natives_dir = paths.instance_natives_dir(request.instance_id, &version.id);
-    tokio::fs::create_dir_all(&natives_dir).await.map_err(|source| MinecraftError::Io {
-        context: format!("creating natives directory {}", natives_dir.display()),
-        source,
-    })?;
+    tokio::fs::create_dir_all(&natives_dir)
+        .await
+        .map_err(|source| MinecraftError::Io {
+            context: format!("creating natives directory {}", natives_dir.display()),
+            source,
+        })?;
     for native_jar in &resolved_libraries.native_jars {
-        libraries::extract_native_jar(native_jar.destination.clone(), natives_dir.clone(), native_jar.exclude.clone())
-            .await?;
+        libraries::extract_native_jar(
+            native_jar.destination.clone(),
+            natives_dir.clone(),
+            native_jar.exclude.clone(),
+        )
+        .await?;
     }
 
     let _ = events.send(LaunchEvent::Stage(LaunchStage::InstallingJava));
-    let java_path = resolve_java(http, download_manager, paths, &version, request.java_override.clone(), events.clone())
-        .await?;
+    let java_path = resolve_java(
+        http,
+        download_manager,
+        paths,
+        &version,
+        request.java_override.clone(),
+        events.clone(),
+    )
+    .await?;
 
     let game_dir = paths.instance_game_dir(request.instance_id);
-    tokio::fs::create_dir_all(&game_dir).await.map_err(|source| MinecraftError::Io {
-        context: format!("creating instance game directory {}", game_dir.display()),
-        source,
-    })?;
+    tokio::fs::create_dir_all(&game_dir)
+        .await
+        .map_err(|source| MinecraftError::Io {
+            context: format!("creating instance game directory {}", game_dir.display()),
+            source,
+        })?;
     if request.fullscreen {
         apply_fullscreen_preference(&game_dir).await;
     }
@@ -285,7 +323,14 @@ pub async fn launch(
         .to_string_lossy()
         .to_string();
 
-    let placeholders = build_placeholders(&request, &version, paths, &classpath, &natives_dir, &paths.assets_dir());
+    let placeholders = build_placeholders(
+        &request,
+        &version,
+        paths,
+        &classpath,
+        &natives_dir,
+        &paths.assets_dir(),
+    );
 
     let mut features = FeatureFlags::new();
     features.set("has_custom_resolution", true);
@@ -302,7 +347,11 @@ pub async fn launch(
 
     match &version.arguments {
         Some(arguments) => {
-            jvm_args.extend(version_detail::resolve_arguments(&arguments.jvm, &features, &placeholders));
+            jvm_args.extend(version_detail::resolve_arguments(
+                &arguments.jvm,
+                &features,
+                &placeholders,
+            ));
         }
         None => {
             // Pre-1.13 versions have no structured `jvm` argument array —
@@ -314,9 +363,14 @@ pub async fn launch(
     }
 
     let mut game_args = match &version.arguments {
-        Some(arguments) => version_detail::resolve_arguments(&arguments.game, &features, &placeholders),
+        Some(arguments) => {
+            version_detail::resolve_arguments(&arguments.game, &features, &placeholders)
+        }
         None => version_detail::resolve_legacy_game_arguments(
-            version.legacy_minecraft_arguments.as_deref().unwrap_or_default(),
+            version
+                .legacy_minecraft_arguments
+                .as_deref()
+                .unwrap_or_default(),
             &placeholders,
         ),
     };
@@ -480,7 +534,14 @@ async fn resolve_java(
         }
     });
 
-    let result = java::ensure_managed_runtime(client, download_manager, &paths.java_runtimes_dir(), component, download_tx).await;
+    let result = java::ensure_managed_runtime(
+        client,
+        download_manager,
+        &paths.java_runtimes_dir(),
+        component,
+        download_tx,
+    )
+    .await;
     forward_handle.abort();
     result
 }
@@ -491,9 +552,14 @@ async fn resolve_java(
 /// choice silently reverted on their next launch.
 async fn apply_fullscreen_preference(game_dir: &Path) {
     let options_path = game_dir.join("options.txt");
-    let existing = tokio::fs::read_to_string(&options_path).await.unwrap_or_default();
+    let existing = tokio::fs::read_to_string(&options_path)
+        .await
+        .unwrap_or_default();
 
-    if existing.lines().any(|line| line.trim() == "fullscreen:true") {
+    if existing
+        .lines()
+        .any(|line| line.trim() == "fullscreen:true")
+    {
         return;
     }
 
@@ -520,7 +586,10 @@ fn build_placeholders(
     map.insert("version_name", version.id.clone());
     map.insert(
         "game_directory",
-        paths.instance_game_dir(request.instance_id).to_string_lossy().to_string(),
+        paths
+            .instance_game_dir(request.instance_id)
+            .to_string_lossy()
+            .to_string(),
     );
     map.insert("assets_root", assets_dir.to_string_lossy().to_string());
     map.insert("game_assets", assets_dir.to_string_lossy().to_string());
@@ -528,10 +597,16 @@ fn build_placeholders(
     map.insert("auth_uuid", request.account.uuid.simple().to_string());
     map.insert("auth_access_token", request.account.access_token.clone());
     map.insert("auth_session", request.account.access_token.clone());
-    map.insert("user_type", request.account.account_type.as_user_type_arg().to_string());
+    map.insert(
+        "user_type",
+        request.account.account_type.as_user_type_arg().to_string(),
+    );
     map.insert("user_properties", "{}".to_string());
     map.insert("version_type", version.version_type.clone());
-    map.insert("natives_directory", natives_dir.to_string_lossy().to_string());
+    map.insert(
+        "natives_directory",
+        natives_dir.to_string_lossy().to_string(),
+    );
     map.insert("launcher_name", "launcher".to_string());
     map.insert("launcher_version", env!("CARGO_PKG_VERSION").to_string());
     map.insert("classpath", classpath.to_string());
@@ -563,7 +638,10 @@ mod tests {
 
     #[test]
     fn offline_uuid_differs_between_names() {
-        assert_ne!(offline_uuid_for_username("Notch"), offline_uuid_for_username("Jeb_"));
+        assert_ne!(
+            offline_uuid_for_username("Notch"),
+            offline_uuid_for_username("Jeb_")
+        );
     }
 
     #[test]

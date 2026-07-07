@@ -66,12 +66,16 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("launcher-test-{}", uuid::Uuid::new_v4()));
         let db_path = dir.join("launcher.db");
 
-        let pool = init_pool(&db_path).await.expect("first init should succeed");
+        let pool = init_pool(&db_path)
+            .await
+            .expect("first init should succeed");
         drop(pool);
 
         // Re-opening (and re-running migrations against) the same file must
         // not error — this is the path every normal app start takes.
-        let pool = init_pool(&db_path).await.expect("second init should succeed");
+        let pool = init_pool(&db_path)
+            .await
+            .expect("second init should succeed");
         drop(pool);
 
         std::fs::remove_dir_all(&dir).ok();

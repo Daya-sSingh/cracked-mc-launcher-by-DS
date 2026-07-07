@@ -73,7 +73,9 @@ pub async fn fetch_compatible_loader_versions(
 /// yet, which does happen shortly after a new Minecraft release — simply
 /// the first entry in the list, on the assumption the API's own ordering
 /// puts the newest build first.
-pub fn recommended_loader_version(candidates: &[FabricLoaderForGame]) -> Option<&FabricLoaderForGame> {
+pub fn recommended_loader_version(
+    candidates: &[FabricLoaderForGame],
+) -> Option<&FabricLoaderForGame> {
     candidates
         .iter()
         .find(|c| c.loader.stable)
@@ -151,7 +153,10 @@ pub async fn load_or_fetch_fabric_version_detail(
                 let _ = tokio::fs::create_dir_all(parent).await;
             }
             let _ = tokio::fs::write(&cache_path, &bytes).await;
-            parse_fabric_profile(&bytes, &format!("Minecraft {game_version} / Fabric {loader_version}"))?
+            parse_fabric_profile(
+                &bytes,
+                &format!("Minecraft {game_version} / Fabric {loader_version}"),
+            )?
         }
     };
 
@@ -268,7 +273,9 @@ mod tests {
             ],
             java_version: None,
             arguments: Some(Arguments {
-                game: vec![crate::version_detail::ArgumentEntry::Plain("--username".to_string())],
+                game: vec![crate::version_detail::ArgumentEntry::Plain(
+                    "--username".to_string(),
+                )],
                 jvm: vec![crate::version_detail::ArgumentEntry::Plain(
                     "-Djava.library.path=${natives_directory}".to_string(),
                 )],
@@ -301,7 +308,10 @@ mod tests {
     fn merge_uses_fabric_id_and_main_class() {
         let merged = merge_profile_onto_vanilla(&sample_vanilla(), sample_profile());
         assert_eq!(merged.id, "fabric-loader-0.16.9-1.21.11");
-        assert_eq!(merged.main_class, "net.fabricmc.loader.impl.launch.knot.KnotClient");
+        assert_eq!(
+            merged.main_class,
+            "net.fabricmc.loader.impl.launch.knot.KnotClient"
+        );
     }
 
     #[test]
@@ -319,16 +329,33 @@ mod tests {
         // vanilla had 2 (asm, brigadier), fabric added 3 (loader,
         // intermediary, asm-again) — asm should collapse, leaving 4.
         assert_eq!(merged.libraries.len(), 4);
-        let asm = merged.libraries.iter().find(|l| l.name.starts_with("org.ow2.asm:asm:")).unwrap();
-        assert_eq!(asm.name, "org.ow2.asm:asm:9.7", "fabric's asm version should win");
+        let asm = merged
+            .libraries
+            .iter()
+            .find(|l| l.name.starts_with("org.ow2.asm:asm:"))
+            .unwrap();
+        assert_eq!(
+            asm.name, "org.ow2.asm:asm:9.7",
+            "fabric's asm version should win"
+        );
     }
 
     #[test]
     fn merge_concatenates_jvm_and_game_arguments() {
         let merged = merge_profile_onto_vanilla(&sample_vanilla(), sample_profile());
-        let arguments = merged.arguments.expect("merged arguments should be present");
-        assert_eq!(arguments.jvm.len(), 2, "vanilla's jvm arg plus fabric's should both be present");
-        assert_eq!(arguments.game.len(), 1, "fabric contributed no game args here, vanilla's should survive");
+        let arguments = merged
+            .arguments
+            .expect("merged arguments should be present");
+        assert_eq!(
+            arguments.jvm.len(),
+            2,
+            "vanilla's jvm arg plus fabric's should both be present"
+        );
+        assert_eq!(
+            arguments.game.len(),
+            1,
+            "fabric contributed no game args here, vanilla's should survive"
+        );
     }
 
     #[test]
@@ -365,7 +392,10 @@ mod tests {
         ];
 
         let picked = recommended_loader_version(&candidates).unwrap();
-        assert_eq!(picked.loader.version, "0.16.9", "should skip the unstable entry even though it's first");
+        assert_eq!(
+            picked.loader.version, "0.16.9",
+            "should skip the unstable entry even though it's first"
+        );
     }
 
     #[test]
@@ -398,7 +428,10 @@ mod tests {
     fn percent_encode_handles_space_and_leaves_normal_versions_untouched() {
         assert_eq!(percent_encode_segment("1.21.11"), "1.21.11");
         assert_eq!(percent_encode_segment("0.16.9"), "0.16.9");
-        assert_eq!(percent_encode_segment("1.14 Pre-Release 5"), "1.14%20Pre-Release%205");
+        assert_eq!(
+            percent_encode_segment("1.14 Pre-Release 5"),
+            "1.14%20Pre-Release%205"
+        );
     }
 
     #[test]
@@ -444,7 +477,10 @@ mod tests {
         "#;
         let parsed: FabricProfile = serde_json::from_str(json).unwrap();
         assert_eq!(parsed.id, "fabric-loader-0.14.11-1.19.2");
-        assert_eq!(parsed.main_class, "net.fabricmc.loader.impl.launch.knot.KnotClient");
+        assert_eq!(
+            parsed.main_class,
+            "net.fabricmc.loader.impl.launch.knot.KnotClient"
+        );
         assert_eq!(parsed.libraries.len(), 3);
     }
 }
