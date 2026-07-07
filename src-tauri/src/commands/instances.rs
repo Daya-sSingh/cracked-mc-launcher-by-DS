@@ -242,7 +242,7 @@ pub async fn list_instance_mods(
         });
     }
 
-    mods.sort_by(|a, b| a.file_name.to_lowercase().cmp(&b.file_name.to_lowercase()));
+    mods.sort_by_key(|a| a.file_name.to_lowercase());
     Ok(mods)
 }
 
